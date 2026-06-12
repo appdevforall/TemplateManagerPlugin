@@ -53,8 +53,24 @@ android {
 dependencies {
     compileOnly(files("libs/plugin-api.jar"))
 
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.10.0")
+       // AppCompat components
+    implementation(libs.androidx.appcompat)
+    implementation(libs.constraintlayout)
+    implementation(libs.material)
+
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.constraintlayout)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.recyclerview)
+    implementation("androidx.documentfile:documentfile:1.0.1")
+
+    
     implementation("androidx.fragment:fragment-ktx:1.8.8")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:2.1.0")
 }
