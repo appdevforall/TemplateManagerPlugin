@@ -45,6 +45,34 @@ Each card has an overflow (⋮) menu:
 Install / Uninstall / Delete always operate on the whole `.cgt` file, since that's the
 unit the IDE registers.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/main-list.png" width="240" alt="Template list"><br>
+      <sub>Template list — installed (green) and available (red) cards, with a
+      "Contains N templates" indicator for multi-template files.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/file-menu.png" width="240" alt="Per-file overflow menu"><br>
+      <sub>Per-file ⋮ menu — Install / Details / Delete for a Downloads file.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/templates-subscreen.png" width="240" alt="Multi-template sub-screen"><br>
+      <sub>Opening a multi-template <code>.cgt</code> shows one card per bundled
+      template, each with its own ⋮ → Details.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/template-details.png" width="240" alt="Per-template details"><br>
+      <sub>A template's Details — version, description, and the optional wizard
+      parameters declared under <code>parameters.optional</code>.</sub>
+    </td>
+  </tr>
+</table>
+
 ## Building
 
 Requires the COGO `plugin-api` (vendored at `libs/plugin-api.jar`) and the
