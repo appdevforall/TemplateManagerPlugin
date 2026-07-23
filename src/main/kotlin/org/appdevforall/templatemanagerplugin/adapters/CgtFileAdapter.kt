@@ -19,7 +19,8 @@ class CgtFileAdapter(
     private val onInstall: (CgtFileItem) -> Unit,
     private val onUninstall: (CgtFileItem) -> Unit,
     private val onDetails: (CgtFileItem) -> Unit,
-    private val onDelete: (CgtFileItem) -> Unit
+    private val onDelete: (CgtFileItem) -> Unit,
+    private val onViewTemplates: (CgtFileItem) -> Unit
 ) : RecyclerView.Adapter<CgtFileAdapter.FileViewHolder>() {
 
     private companion object {
@@ -27,6 +28,7 @@ class CgtFileAdapter(
         const val MENU_UNINSTALL = 2
         const val MENU_DETAILS = 3
         const val MENU_DELETE = 4
+        const val MENU_VIEW = 5
     }
 
     inner class FileViewHolder(private val binding: ItemCgtFileBinding) :
@@ -42,8 +44,11 @@ class CgtFileAdapter(
             if (item.hasMultipleTemplates) {
                 binding.tvMultiTemplate.visibility = View.VISIBLE
                 binding.tvMultiTemplate.text = "Contains ${item.templates.size} templates"
+                binding.root.setOnClickListener { onViewTemplates(item) }
             } else {
                 binding.tvMultiTemplate.visibility = View.GONE
+                binding.root.setOnClickListener(null)
+                binding.root.isClickable = false
             }
 
             if (item.installed) {
@@ -62,10 +67,15 @@ class CgtFileAdapter(
                 val popup = PopupMenu(anchor.context, anchor, Gravity.END, 0, R.style.PopupMenuStyle)
                 if (item.installed) {
                     popup.menu.add(0, MENU_UNINSTALL, 0, "Uninstall")
-                    popup.menu.add(0, MENU_DETAILS, 1, "Details")
                 } else {
                     popup.menu.add(0, MENU_INSTALL, 0, "Install")
+                }
+                if (item.hasMultipleTemplates) {
+                    popup.menu.add(0, MENU_VIEW, 1, "View templates")
+                } else {
                     popup.menu.add(0, MENU_DETAILS, 1, "Details")
+                }
+                if (!item.installed) {
                     popup.menu.add(0, MENU_DELETE, 2, "Delete")
                 }
                 popup.setOnMenuItemClickListener { menuItem ->
@@ -74,6 +84,7 @@ class CgtFileAdapter(
                         MENU_UNINSTALL -> onUninstall(item)
                         MENU_DETAILS -> onDetails(item)
                         MENU_DELETE -> onDelete(item)
+                        MENU_VIEW -> onViewTemplates(item)
                     }
                     true
                 }

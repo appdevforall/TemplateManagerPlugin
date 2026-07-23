@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.appdevforall.templatemanagerplugin.R
 import org.appdevforall.templatemanagerplugin.adapters.CgtFileAdapter
+import org.appdevforall.templatemanagerplugin.adapters.TemplateCardAdapter
 import org.appdevforall.templatemanagerplugin.models.CgtFileItem
 import org.appdevforall.templatemanagerplugin.models.TemplateMetadata
 import org.appdevforall.templatemanagerplugin.models.displayName
@@ -44,7 +45,8 @@ class TemplateManagerPluginFragment : Fragment() {
         onInstall = ::installTemplate,
         onUninstall = ::uninstallTemplate,
         onDetails = ::showDetails,
-        onDelete = ::confirmDeleteDownloadFile
+        onDelete = ::confirmDeleteDownloadFile,
+        onViewTemplates = ::showTemplateList
     )
 
     override fun onGetLayoutInflater(savedInstanceState: Bundle?): LayoutInflater {
@@ -225,34 +227,54 @@ class TemplateManagerPluginFragment : Fragment() {
         ).show()
     }
 
+    /** File-level details for a single-template .cgt (multi-template files use [showTemplateList]). */
     private fun showDetails(item: CgtFileItem) {
         val primary = item.primaryTemplate
         val message = buildString {
             append("File: ${item.displayName}\n")
             append("Status: ${if (item.installed) "Installed" else "Not installed"}\n")
-            append("Location: ${item.file.absolutePath}\n\n")
-            if (item.templates.size > 1) {
-                append("Contains ${item.templates.size} templates:\n")
-                item.templates.forEachIndexed { index, template ->
-                    append("\n${index + 1}. ${template.name.ifBlank { "(unnamed)" }} (v${template.version})")
-                    if (template.description.isNotBlank()) {
-                        append("\n   ${template.description}")
-                    }
-                    if (template.optionalTags.isNotEmpty()) {
-                        append("\n   Optional: ${template.optionalTags.joinToString(", ")}")
-                    }
-                }
-            } else {
-                append("Version: ${primary.version}\n\n")
-                append(primary.description)
-                if (primary.optionalTags.isNotEmpty()) {
-                    append("\n\nOptional parameters:")
-                    primary.optionalTags.forEach { append("\n  • $it") }
-                }
+            append("Location: ${item.file.absolutePath}\n")
+            append("Version: ${primary.version}\n\n")
+            append(primary.description)
+            if (primary.optionalTags.isNotEmpty()) {
+                append("\n\nOptional parameters:")
+                primary.optionalTags.forEach { append("\n  • $it") }
             }
         }
-        val density = resources.displayMetrics.density
-        val padding = (24 * density).toInt()
+        showScrollableDialog(primary.name.ifBlank { item.displayName }, message)
+    }
+
+    /** Sub-screen: one card per template bundled inside a multi-template .cgt. */
+    private fun showTemplateList(item: CgtFileItem) {
+        val recycler = RecyclerView(requireContext()).apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = TemplateCardAdapter(item.templates) { template -> showTemplateDetails(template) }
+            clipToPadding = false
+            val vertical = (8 * resources.displayMetrics.density).toInt()
+            setPadding(0, vertical, 0, vertical)
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Templates in ${item.displayName}")
+            .setView(recycler)
+            .setPositiveButton("Close", null)
+            .show()
+    }
+
+    /** Details for a single template selected from the [showTemplateList] sub-screen. */
+    private fun showTemplateDetails(template: TemplateMetadata) {
+        val message = buildString {
+            append("Version: ${template.version}\n\n")
+            append(template.description)
+            if (template.optionalTags.isNotEmpty()) {
+                append("\n\nOptional parameters:")
+                template.optionalTags.forEach { append("\n  • $it") }
+            }
+        }
+        showScrollableDialog(template.name.ifBlank { "(unnamed)" }, message)
+    }
+
+    private fun showScrollableDialog(title: String, message: String) {
+        val padding = (24 * resources.displayMetrics.density).toInt()
         val textView = TextView(requireContext()).apply {
             text = message
             setTextIsSelectable(true)
@@ -262,7 +284,7 @@ class TemplateManagerPluginFragment : Fragment() {
             addView(textView)
         }
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(primary.name.ifBlank { item.displayName })
+            .setTitle(title)
             .setView(scrollView)
             .setPositiveButton("Close", null)
             .show()

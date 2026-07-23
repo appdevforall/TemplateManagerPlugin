@@ -18,17 +18,18 @@ matching editor tab) that shows a card list of every `.cgt` template it can find
 
 Each card shows the template's name, version, description, and source filename. A
 `.cgt` file can bundle more than one template (the IDE's own `core.cgt` bundles nine);
-when it does, the card shows a **"Contains N templates"** indicator and the **Details**
-dialog lists every bundled template with its own name, version, and description.
+when it does, the card shows a **"Contains N templates"** indicator, and tapping the
+card (or its **View templates** menu entry) opens a sub-screen with one card per
+bundled template — each with its own **Details** action.
 
 ## Per-card actions
 
 Each card has an overflow (⋮) menu:
 
-| Card state | Menu entries |
-|---|---|
-| Installed | **Uninstall**, **Details** |
-| Not installed (in Downloads) | **Install**, **Details**, **Delete** |
+| Card state | Single-template | Multi-template |
+|---|---|---|
+| Installed | **Uninstall**, **Details** | **Uninstall**, **View templates** |
+| Not installed (in Downloads) | **Install**, **Details**, **Delete** | **Install**, **View templates**, **Delete** |
 
 - **Install** — registers the template with the IDE and **moves** the file out of
   Downloads into the template store (it no longer appears as a Downloads entry).
@@ -36,8 +37,13 @@ Each card has an overflow (⋮) menu:
   original filename, where it reappears as *Not installed*.
 - **Delete** — permanently removes the `.cgt` from Downloads, after a confirmation
   dialog.
-- **Details** — shows full metadata (file, version, status, on-disk location, and the
-  full description); scrollable so long multi-template lists are never clipped.
+- **Details** — shows a single template's metadata (version, description, and any
+  optional wizard parameters declared under `parameters.optional`); scrollable.
+- **View templates** — for a multi-template `.cgt`, opens the per-template card
+  sub-screen described above; each of those cards has its own **Details**.
+
+Install / Uninstall / Delete always operate on the whole `.cgt` file, since that's the
+unit the IDE registers.
 
 ## Building
 
@@ -99,7 +105,8 @@ src/main/
 ├── kotlin/org/appdevforall/templatemanagerplugin/
 │   ├── TemplateManagerPlugin.kt              # IPlugin + UIExtension + EditorTabExtension + DocumentationExtension
 │   ├── fragments/TemplateManagerPluginFragment.kt  # the template dashboard UI + install/uninstall/delete logic
-│   ├── adapters/CgtFileAdapter.kt            # RecyclerView adapter + per-card overflow menu
+│   ├── adapters/CgtFileAdapter.kt            # main list adapter + per-file overflow menu
+│   ├── adapters/TemplateCardAdapter.kt       # per-template cards for the multi-template sub-screen
 │   └── models/CgtFileItem.kt                 # card model + TemplateMetadata
 ├── res/                                       # layouts, PluginTheme, day/night colors, drawables
 ├── assets/                                    # icon_day.png / icon_night.png (plugin manager icons)
