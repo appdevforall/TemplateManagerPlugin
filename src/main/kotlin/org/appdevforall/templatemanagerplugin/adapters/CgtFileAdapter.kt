@@ -13,13 +13,15 @@ class CgtFileAdapter(
     private val items: List<CgtFileItem>,
     private val onInstall: (CgtFileItem) -> Unit,
     private val onUninstall: (CgtFileItem) -> Unit,
-    private val onDetails: (CgtFileItem) -> Unit
+    private val onDetails: (CgtFileItem) -> Unit,
+    private val onDelete: (CgtFileItem) -> Unit
 ) : RecyclerView.Adapter<CgtFileAdapter.FileViewHolder>() {
 
     private companion object {
         const val MENU_INSTALL = 1
         const val MENU_UNINSTALL = 2
         const val MENU_DETAILS = 3
+        const val MENU_DELETE = 4
     }
 
     inner class FileViewHolder(private val binding: ItemCgtFileBinding) :
@@ -47,15 +49,18 @@ class CgtFileAdapter(
                 val popup = PopupMenu(anchor.context, anchor)
                 if (item.installed) {
                     popup.menu.add(0, MENU_UNINSTALL, 0, "Uninstall")
+                    popup.menu.add(0, MENU_DETAILS, 1, "Details")
                 } else {
                     popup.menu.add(0, MENU_INSTALL, 0, "Install")
+                    popup.menu.add(0, MENU_DETAILS, 1, "Details")
+                    popup.menu.add(0, MENU_DELETE, 2, "Delete")
                 }
-                popup.menu.add(0, MENU_DETAILS, 1, "Details")
                 popup.setOnMenuItemClickListener { menuItem ->
                     when (menuItem.itemId) {
                         MENU_INSTALL -> onInstall(item)
                         MENU_UNINSTALL -> onUninstall(item)
                         MENU_DETAILS -> onDetails(item)
+                        MENU_DELETE -> onDelete(item)
                     }
                     true
                 }

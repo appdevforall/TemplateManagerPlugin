@@ -39,7 +39,8 @@ class TemplateManagerPluginFragment : Fragment() {
         items,
         onInstall = ::installTemplate,
         onUninstall = ::uninstallTemplate,
-        onDetails = ::showDetails
+        onDetails = ::showDetails,
+        onDelete = ::confirmDeleteDownloadFile
     )
 
     override fun onGetLayoutInflater(savedInstanceState: Bundle?): LayoutInflater {
@@ -158,12 +159,39 @@ class TemplateManagerPluginFragment : Fragment() {
             Toast.makeText(context, "Template service is not available", Toast.LENGTH_SHORT).show()
             return
         }
+
+        val restoredFile = File(DOWNLOAD_DIR, item.unregisterName)
+        val restored = runCatching { item.file.copyTo(restoredFile, overwrite = true) }.isSuccess
+
         val success = service.unregisterTemplate(item.unregisterName)
+        if (!success && restored) {
+            restoredFile.delete()
+        }
+
         service.reloadTemplates()
         refreshTemplates()
         Toast.makeText(
             context,
             if (success) "Uninstalled ${item.name}" else "Failed to uninstall ${item.name}",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun confirmDeleteDownloadFile(item: CgtFileItem) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Delete ${item.name}?")
+            .setMessage("This permanently deletes the file from Downloads.")
+            .setPositiveButton("Delete") { _, _ -> deleteDownloadFile(item) }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun deleteDownloadFile(item: CgtFileItem) {
+        val success = item.file.delete()
+        refreshTemplates()
+        Toast.makeText(
+            context,
+            if (success) "Deleted ${item.name}" else "Failed to delete ${item.name}",
             Toast.LENGTH_SHORT
         ).show()
     }
