@@ -1,23 +1,21 @@
 package org.appdevforall.templatemanagerplugin.fragments
 
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.appdevforall.templatemanagerplugin.R
 import org.appdevforall.templatemanagerplugin.adapters.CgtFileAdapter
 import org.appdevforall.templatemanagerplugin.models.CgtFileItem
 import com.itsaky.androidide.plugins.base.PluginFragmentHelper
+import com.itsaky.androidide.plugins.services.IdeEnvironmentService
 import com.itsaky.androidide.plugins.services.IdeTemplateService
-import com.itsaky.androidide.plugins.services.IdeTooltipService
 import org.json.JSONObject
 import java.io.File
 import java.util.zip.ZipInputStream
@@ -27,35 +25,22 @@ class TemplateManagerPluginFragment : Fragment() {
     companion object {
         private const val PLUGIN_ID = "org.appdevforall.templatemanagerplugin"
         private const val TEMPLATE_JSON_SUFFIX = "/template/template.json"
+        private const val TEMPLATES_SUBDIR = "templates"
+        private val DOWNLOAD_DIR = File("/sdcard/Download")
     }
 
     private var recyclerView: RecyclerView? = null
-    private var btnCancel: Button? = null
-    private var btnLoad: Button? = null
-    private var tooltipService: IdeTooltipService? = null
+    private var emptyView: TextView? = null
     private var templateService: IdeTemplateService? = null
+    private var environmentService: IdeEnvironmentService? = null
 
     private val items = mutableListOf<CgtFileItem>()
-    private val adapter = CgtFileAdapter(items)
-
-    private val openTemplates = registerForActivityResult(
-        ActivityResultContracts.OpenMultipleDocuments()
-    ) { uris ->
-        if (uris.isEmpty()) return@registerForActivityResult
-
-        val parsed = uris.mapNotNull { uri -> runCatching { parseCgtFile(uri) }.getOrNull() }
-        items.addAll(parsed)
-        adapter.notifyDataSetChanged()
-
-        val skipped = uris.size - parsed.size
-        if (skipped > 0) {
-            Toast.makeText(
-                context,
-                "Skipped $skipped file(s) that aren't valid templates",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
+    private val adapter = CgtFileAdapter(
+        items,
+        onInstall = ::installTemplate,
+        onUninstall = ::uninstallTemplate,
+        onDetails = ::showDetails
+    )
 
     override fun onGetLayoutInflater(savedInstanceState: Bundle?): LayoutInflater {
         val inflater = super.onGetLayoutInflater(savedInstanceState)
@@ -74,46 +59,56 @@ class TemplateManagerPluginFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         recyclerView = view.findViewById(R.id.recyclerView)
-        btnCancel = view.findViewById(R.id.btnCancel)
-        btnLoad = view.findViewById(R.id.btnLoad)
+        emptyView = view.findViewById(R.id.tvEmpty)
 
         recyclerView?.layoutManager = LinearLayoutManager(requireContext())
         recyclerView?.adapter = adapter
 
-        btnCancel?.setOnClickListener {
-            onCancelClicked()
-        }
+        refreshTemplates()
+    }
 
-        btnLoad?.setOnClickListener {
-            onLoadClicked()
-        }
+    override fun onResume() {
+        super.onResume()
+        refreshTemplates()
+    }
 
-        btnLoad?.setOnLongClickListener { button ->
-            tooltipService?.showTooltip(
-                anchorView = button,
-                category = "org_appdevforall_templatemanagerplugin",
-                tag = "org_appdevforall_templatemanagerplugin.overview"
-            ) ?: run {
-                activity?.runOnUiThread {
-                    Toast.makeText(context, "Long press detected! Tooltip service not available.", Toast.LENGTH_SHORT).show()
-                }
+    /** Re-scans the IDE's templates directory and /sdcard/Download, rebuilding the card list. */
+    private fun refreshTemplates() {
+        val prefix = "plugin_${PLUGIN_ID}_"
+
+        val installedItems = templatesDirectory()
+            ?.listFiles { f -> f.isFile && f.name.endsWith(".cgt", ignoreCase = true) }
+            ?.sortedBy { it.name }
+            ?.mapNotNull { file ->
+                val unregisterName = file.name.removePrefix(prefix)
+                runCatching { parseCgtFile(file, installed = true, unregisterName = unregisterName) }.getOrNull()
             }
-            true
-        }
+            ?: emptyList()
 
-        if (savedInstanceState == null && items.isEmpty()) {
-            openTemplates.launch(arrayOf("*/*"))
-        }
+        val downloadItems = DOWNLOAD_DIR
+            .listFiles { f -> f.isFile && f.name.endsWith(".cgt", ignoreCase = true) }
+            ?.sortedBy { it.name }
+            ?.mapNotNull { file ->
+                runCatching { parseCgtFile(file, installed = false, unregisterName = file.name) }.getOrNull()
+            }
+            ?: emptyList()
+
+        items.clear()
+        items.addAll(installedItems)
+        items.addAll(downloadItems)
+        adapter.notifyDataSetChanged()
+
+        emptyView?.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    private fun templatesDirectory(): File? {
+        val ideHome = environmentService?.getIdeHomeDirectory() ?: return null
+        return File(ideHome, TEMPLATES_SUBDIR)
     }
 
     /** Reads a .cgt (zip) file's "template/template.json" entry to extract its metadata. */
-    private fun parseCgtFile(uri: Uri): CgtFileItem? {
-        val displayName = DocumentFile.fromSingleUri(requireContext(), uri)?.name
-            ?: uri.lastPathSegment
-            ?: "template.cgt"
-
-        val input = requireContext().contentResolver.openInputStream(uri) ?: return null
-        return input.use { stream ->
+    private fun parseCgtFile(file: File, installed: Boolean, unregisterName: String): CgtFileItem? {
+        return file.inputStream().use { stream ->
             ZipInputStream(stream).use { zip ->
                 var result: CgtFileItem? = null
                 while (true) {
@@ -121,12 +116,13 @@ class TemplateManagerPluginFragment : Fragment() {
                     if (entry.name.endsWith(TEMPLATE_JSON_SUFFIX)) {
                         val json = JSONObject(zip.readBytes().toString(Charsets.UTF_8))
                         result = CgtFileItem(
-                            uri = uri,
-                            name = displayName,
-                            isChecked = true,
+                            file = file,
+                            name = file.name,
                             templateName = json.optString("name"),
                             templateDesc = json.optString("description"),
-                            templateVersion = json.optString("version")
+                            templateVersion = json.optString("version"),
+                            installed = installed,
+                            unregisterName = unregisterName
                         )
                         break
                     }
@@ -137,50 +133,57 @@ class TemplateManagerPluginFragment : Fragment() {
         }
     }
 
-    private fun onCancelClicked() {
-        items.clear()
-        adapter.notifyDataSetChanged()
-    }
-
-    private fun onLoadClicked() {
-        val selected = adapter.getSelectedItems()
-        if (selected.isEmpty()) {
-            Toast.makeText(context, "No templates selected", Toast.LENGTH_SHORT).show()
-            return
-        }
-
+    private fun installTemplate(item: CgtFileItem) {
         val service = templateService
         if (service == null) {
             Toast.makeText(context, "Template service is not available", Toast.LENGTH_SHORT).show()
             return
         }
-
-        val successCount = selected.count { item ->
-            val file = copyToCache(item)
-            file != null && service.registerTemplate(file)
-        }
+        val success = service.registerTemplate(item.file)
         service.reloadTemplates()
-
+        refreshTemplates()
         Toast.makeText(
             context,
-            "Loaded $successCount of ${selected.size} template(s)",
+            if (success) "Installed ${item.name}" else "Failed to install ${item.name}",
             Toast.LENGTH_SHORT
         ).show()
     }
 
-    private fun copyToCache(item: CgtFileItem): File? = runCatching {
-        val outFile = File(requireContext().cacheDir, item.name)
-        requireContext().contentResolver.openInputStream(item.uri)?.use { input ->
-            outFile.outputStream().use { output -> input.copyTo(output) }
-        } ?: return null
-        outFile
-    }.getOrNull()
+    private fun uninstallTemplate(item: CgtFileItem) {
+        val service = templateService
+        if (service == null) {
+            Toast.makeText(context, "Template service is not available", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val success = service.unregisterTemplate(item.unregisterName)
+        service.reloadTemplates()
+        refreshTemplates()
+        Toast.makeText(
+            context,
+            if (success) "Uninstalled ${item.name}" else "Failed to uninstall ${item.name}",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    private fun showDetails(item: CgtFileItem) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(item.templateName.ifBlank { item.name })
+            .setMessage(
+                "File: ${item.name}\n" +
+                    "Version: ${item.templateVersion}\n" +
+                    "Status: ${if (item.installed) "Installed" else "Not installed"}\n" +
+                    "Location: ${item.file.absolutePath}\n\n" +
+                    item.templateDesc
+            )
+            .setPositiveButton("Close", null)
+            .show()
+    }
 
     fun setupServices() {
         runCatching {
             val serviceRegistry = PluginFragmentHelper.getServiceRegistry(PLUGIN_ID)
-            tooltipService = serviceRegistry?.get(IdeTooltipService::class.java)
             templateService = serviceRegistry?.get(IdeTemplateService::class.java)
+            environmentService = serviceRegistry?.get(IdeEnvironmentService::class.java)
         }
     }
 
@@ -188,7 +191,6 @@ class TemplateManagerPluginFragment : Fragment() {
         super.onDestroyView()
         recyclerView?.adapter = null
         recyclerView = null
-        btnCancel = null
-        btnLoad = null
+        emptyView = null
     }
 }
