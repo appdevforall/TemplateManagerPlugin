@@ -140,6 +140,9 @@ class TemplateManagerPluginFragment : Fragment() {
             return
         }
         val success = service.registerTemplate(item.file)
+        if (success) {
+            item.file.delete()
+        }
         service.reloadTemplates()
         refreshTemplates()
         Toast.makeText(
