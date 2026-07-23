@@ -40,7 +40,7 @@
     -->
     <meta-data
         android:name="plugin.permissions"
-        android:value="filesystem.read,filesystem.write,project.structure" />
+        android:value="filesystem.write" />
 
     <meta-data
         android:name="plugin.icon_day"

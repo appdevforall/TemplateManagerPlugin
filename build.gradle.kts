@@ -36,6 +36,10 @@ android {
         jvmTarget = "17"
     }
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     packaging {
         resources {
             excludes += setOf(
@@ -61,11 +65,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.constraintlayout)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.recyclerview)
     implementation("androidx.documentfile:documentfile:1.0.1")

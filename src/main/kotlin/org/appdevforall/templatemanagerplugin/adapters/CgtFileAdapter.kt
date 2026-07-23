@@ -3,8 +3,8 @@ package org.appdevforall.templatemanagerplugin.adapters
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import org.appdevforall.templatemanager.databinding.ItemCgtFileBinding
-import org.appdevforall.templatemanager.models.CgtFileItem
+import org.appdevforall.templatemanagerplugin.databinding.ItemCgtFileBinding
+import org.appdevforall.templatemanagerplugin.models.CgtFileItem
 
 class CgtFileAdapter(
     private val items: List<CgtFileItem>
