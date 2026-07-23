@@ -13,6 +13,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.appdevforall.templatemanagerplugin.R
 import org.appdevforall.templatemanagerplugin.adapters.CgtFileAdapter
 import org.appdevforall.templatemanagerplugin.models.CgtFileItem
+import org.appdevforall.templatemanagerplugin.models.TemplateMetadata
+import org.appdevforall.templatemanagerplugin.models.displayName
+import org.appdevforall.templatemanagerplugin.models.primaryTemplate
 import com.itsaky.androidide.plugins.base.PluginFragmentHelper
 import com.itsaky.androidide.plugins.services.IdeEnvironmentService
 import com.itsaky.androidide.plugins.services.IdeTemplateService
@@ -107,31 +110,38 @@ class TemplateManagerPluginFragment : Fragment() {
         return File(ideHome, TEMPLATES_SUBDIR)
     }
 
-    /** Reads a .cgt (zip) file's "template/template.json" entry to extract its metadata. */
+    /**
+     * Reads every "<path>/template/template.json" entry in a .cgt (zip) file — there can be
+     * more than one when the file bundles multiple templates behind a single install.
+     */
     private fun parseCgtFile(file: File, installed: Boolean, unregisterName: String): CgtFileItem? {
-        return file.inputStream().use { stream ->
+        val templates = mutableListOf<TemplateMetadata>()
+        file.inputStream().use { stream ->
             ZipInputStream(stream).use { zip ->
-                var result: CgtFileItem? = null
                 while (true) {
                     val entry = zip.nextEntry ?: break
                     if (entry.name.endsWith(TEMPLATE_JSON_SUFFIX)) {
                         val json = JSONObject(zip.readBytes().toString(Charsets.UTF_8))
-                        result = CgtFileItem(
-                            file = file,
-                            name = file.name,
-                            templateName = json.optString("name"),
-                            templateDesc = json.optString("description"),
-                            templateVersion = json.optString("version"),
-                            installed = installed,
-                            unregisterName = unregisterName
+                        templates.add(
+                            TemplateMetadata(
+                                name = json.optString("name"),
+                                description = json.optString("description"),
+                                version = json.optString("version")
+                            )
                         )
-                        break
                     }
                     zip.closeEntry()
                 }
-                result
             }
         }
+        if (templates.isEmpty()) return null
+        return CgtFileItem(
+            file = file,
+            name = file.name,
+            templates = templates,
+            installed = installed,
+            unregisterName = unregisterName
+        )
     }
 
     private fun installTemplate(item: CgtFileItem) {
@@ -148,7 +158,7 @@ class TemplateManagerPluginFragment : Fragment() {
         refreshTemplates()
         Toast.makeText(
             context,
-            if (success) "Installed ${item.name}" else "Failed to install ${item.name}",
+            if (success) "Installed ${item.displayName}" else "Failed to install ${item.displayName}",
             Toast.LENGTH_SHORT
         ).show()
     }
@@ -172,14 +182,14 @@ class TemplateManagerPluginFragment : Fragment() {
         refreshTemplates()
         Toast.makeText(
             context,
-            if (success) "Uninstalled ${item.name}" else "Failed to uninstall ${item.name}",
+            if (success) "Uninstalled ${item.displayName}" else "Failed to uninstall ${item.displayName}",
             Toast.LENGTH_SHORT
         ).show()
     }
 
     private fun confirmDeleteDownloadFile(item: CgtFileItem) {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Delete ${item.name}?")
+            .setTitle("Delete ${item.displayName}?")
             .setMessage("This permanently deletes the file from Downloads.")
             .setPositiveButton("Delete") { _, _ -> deleteDownloadFile(item) }
             .setNegativeButton("Cancel", null)
@@ -191,21 +201,33 @@ class TemplateManagerPluginFragment : Fragment() {
         refreshTemplates()
         Toast.makeText(
             context,
-            if (success) "Deleted ${item.name}" else "Failed to delete ${item.name}",
+            if (success) "Deleted ${item.displayName}" else "Failed to delete ${item.displayName}",
             Toast.LENGTH_SHORT
         ).show()
     }
 
     private fun showDetails(item: CgtFileItem) {
+        val primary = item.primaryTemplate
+        val message = buildString {
+            append("File: ${item.displayName}\n")
+            append("Status: ${if (item.installed) "Installed" else "Not installed"}\n")
+            append("Location: ${item.file.absolutePath}\n\n")
+            if (item.templates.size > 1) {
+                append("Contains ${item.templates.size} templates:\n")
+                item.templates.forEachIndexed { index, template ->
+                    append("\n${index + 1}. ${template.name.ifBlank { "(unnamed)" }} (v${template.version})")
+                    if (template.description.isNotBlank()) {
+                        append("\n   ${template.description}")
+                    }
+                }
+            } else {
+                append("Version: ${primary.version}\n\n")
+                append(primary.description)
+            }
+        }
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(item.templateName.ifBlank { item.name })
-            .setMessage(
-                "File: ${item.name}\n" +
-                    "Version: ${item.templateVersion}\n" +
-                    "Status: ${if (item.installed) "Installed" else "Not installed"}\n" +
-                    "Location: ${item.file.absolutePath}\n\n" +
-                    item.templateDesc
-            )
+            .setTitle(primary.name.ifBlank { item.displayName })
+            .setMessage(message)
             .setPositiveButton("Close", null)
             .show()
     }

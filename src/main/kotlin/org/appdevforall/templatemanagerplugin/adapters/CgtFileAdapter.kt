@@ -1,6 +1,8 @@
 package org.appdevforall.templatemanagerplugin.adapters
 
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.core.content.ContextCompat
@@ -8,6 +10,9 @@ import androidx.recyclerview.widget.RecyclerView
 import org.appdevforall.templatemanagerplugin.R
 import org.appdevforall.templatemanagerplugin.databinding.ItemCgtFileBinding
 import org.appdevforall.templatemanagerplugin.models.CgtFileItem
+import org.appdevforall.templatemanagerplugin.models.displayName
+import org.appdevforall.templatemanagerplugin.models.hasMultipleTemplates
+import org.appdevforall.templatemanagerplugin.models.primaryTemplate
 
 class CgtFileAdapter(
     private val items: List<CgtFileItem>,
@@ -28,10 +33,18 @@ class CgtFileAdapter(
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: CgtFileItem) {
-            binding.tvTemplateName.text = item.templateName.ifBlank { item.name }
-            binding.tvTemplateVersion.text = item.templateVersion
-            binding.tvTemplateDesc.text = item.templateDesc
-            binding.tvFileName.text = item.name
+            val primary = item.primaryTemplate
+            binding.tvTemplateName.text = primary.name.ifBlank { item.displayName }
+            binding.tvTemplateVersion.text = primary.version
+            binding.tvTemplateDesc.text = primary.description
+            binding.tvFileName.text = item.displayName
+
+            if (item.hasMultipleTemplates) {
+                binding.tvMultiTemplate.visibility = View.VISIBLE
+                binding.tvMultiTemplate.text = "Contains ${item.templates.size} templates"
+            } else {
+                binding.tvMultiTemplate.visibility = View.GONE
+            }
 
             if (item.installed) {
                 binding.tvStatus.text = "Installed"
@@ -46,7 +59,7 @@ class CgtFileAdapter(
             }
 
             binding.btnMenu.setOnClickListener { anchor ->
-                val popup = PopupMenu(anchor.context, anchor)
+                val popup = PopupMenu(anchor.context, anchor, Gravity.END, 0, R.style.PopupMenuStyle)
                 if (item.installed) {
                     popup.menu.add(0, MENU_UNINSTALL, 0, "Uninstall")
                     popup.menu.add(0, MENU_DETAILS, 1, "Details")
