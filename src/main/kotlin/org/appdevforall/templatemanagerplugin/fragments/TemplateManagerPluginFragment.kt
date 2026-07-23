@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -225,9 +226,19 @@ class TemplateManagerPluginFragment : Fragment() {
                 append(primary.description)
             }
         }
+        val density = resources.displayMetrics.density
+        val padding = (24 * density).toInt()
+        val textView = TextView(requireContext()).apply {
+            text = message
+            setTextIsSelectable(true)
+            setPadding(padding, padding, padding, 0)
+        }
+        val scrollView = ScrollView(requireContext()).apply {
+            addView(textView)
+        }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(primary.name.ifBlank { item.displayName })
-            .setMessage(message)
+            .setView(scrollView)
             .setPositiveButton("Close", null)
             .show()
     }
