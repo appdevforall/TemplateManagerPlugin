@@ -127,7 +127,8 @@ class TemplateManagerPluginFragment : Fragment() {
                             TemplateMetadata(
                                 name = json.optString("name"),
                                 description = json.optString("description"),
-                                version = json.optString("version")
+                                version = json.optString("version"),
+                                optionalTags = parseOptionalTags(json)
                             )
                         )
                     }
@@ -143,6 +144,23 @@ class TemplateManagerPluginFragment : Fragment() {
             installed = installed,
             unregisterName = unregisterName
         )
+    }
+
+    /**
+     * Collects the tags declared under parameters.optional. Each is rendered as
+     * "<tag> (<identifier>)" when the entry carries an identifier, else just "<tag>".
+     */
+    private fun parseOptionalTags(json: JSONObject): List<String> {
+        val optional = json.optJSONObject("parameters")?.optJSONObject("optional")
+            ?: return emptyList()
+        val tags = mutableListOf<String>()
+        val keys = optional.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val identifier = optional.optJSONObject(key)?.optString("identifier").orEmpty()
+            tags.add(if (identifier.isNotBlank()) "$key ($identifier)" else key)
+        }
+        return tags
     }
 
     private fun installTemplate(item: CgtFileItem) {
@@ -220,10 +238,17 @@ class TemplateManagerPluginFragment : Fragment() {
                     if (template.description.isNotBlank()) {
                         append("\n   ${template.description}")
                     }
+                    if (template.optionalTags.isNotEmpty()) {
+                        append("\n   Optional: ${template.optionalTags.joinToString(", ")}")
+                    }
                 }
             } else {
                 append("Version: ${primary.version}\n\n")
                 append(primary.description)
+                if (primary.optionalTags.isNotEmpty()) {
+                    append("\n\nOptional parameters:")
+                    primary.optionalTags.forEach { append("\n  • $it") }
+                }
             }
         }
         val density = resources.displayMetrics.density

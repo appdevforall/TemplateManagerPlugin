@@ -5,7 +5,9 @@ import java.io.File
 data class TemplateMetadata(
     val name: String,
     val description: String,
-    val version: String
+    val version: String,
+    /** Tags declared under parameters.optional in template.json, e.g. "language (LANGUAGE)". */
+    val optionalTags: List<String> = emptyList()
 )
 
 data class CgtFileItem(
@@ -19,6 +21,8 @@ data class CgtFileItem(
 /** The first template's metadata, used to populate the card's title/description/version. */
 val CgtFileItem.primaryTemplate: TemplateMetadata
     get() = templates.firstOrNull() ?: TemplateMetadata(name = "", description = "", version = "")
+
+
 
 /** True when this .cgt file bundles more than one template. */
 val CgtFileItem.hasMultipleTemplates: Boolean

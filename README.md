@@ -68,11 +68,15 @@ need the latest changes.)
 
 The plugin then appears in the left sidebar.
 
-> **Upgrading from a debug build?** Code On the Go refuses to install a release
-> `.cgp` over an existing debug install (or vice-versa) — it shows *"…was installed
-> from a different build variant. Uninstall it before installing this version."*
-> First **uninstall** the existing plugin (its ⋮ menu → Uninstall) and restart, then
-> install the new `.cgp`.
+> **Upgrading an already-installed copy?** Code On the Go compares the `.cgp`'s
+> signing certificate against the installed one and refuses the install if they
+> differ, showing *"…was installed from a different build variant. Uninstall it
+> before installing this version."* Despite the wording, this is a **signature
+> mismatch** — release builds here aren't signed with a stable key, so it triggers on
+> essentially every rebuild, as well as when switching between debug and release.
+> (Debug rebuilds on the same machine share the debug keystore, so those can be
+> replaced in place.) When you hit it, **uninstall** the existing plugin first
+> (its ⋮ menu → Uninstall), restart, then install the new `.cgp`.
 
 ## Plugin manifest
 
