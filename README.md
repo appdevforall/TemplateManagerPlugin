@@ -68,6 +68,12 @@ need the latest changes.)
 
 The plugin then appears in the left sidebar.
 
+> **Upgrading from a debug build?** Code On the Go refuses to install a release
+> `.cgp` over an existing debug install (or vice-versa) — it shows *"…was installed
+> from a different build variant. Uninstall it before installing this version."*
+> First **uninstall** the existing plugin (its ⋮ menu → Uninstall) and restart, then
+> install the new `.cgp`.
+
 ## Plugin manifest
 
 | Field | Value |
