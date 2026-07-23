@@ -49,9 +49,19 @@ Requires the COGO `plugin-api` (vendored at `libs/plugin-api.jar`) and the
 ./gradlew assemblePluginRelease   # build/plugin/templatemanagerplugin.cgp
 ```
 
+## Prebuilt plugin
+
+A prebuilt debug `.cgp` is checked into the repo at
+[`prebuilt/templatemanagerplugin-debug.cgp`](prebuilt/templatemanagerplugin-debug.cgp)
+so you can install it without running a local Gradle build — just copy that file to the
+device and follow the steps below. (Rebuild from source with the commands above if you
+need the latest changes.)
+
 ## Installing
 
-1. Copy the built `.cgp` to the device (e.g. into `Download/`).
+1. Copy a `.cgp` to the device (e.g. into `Download/`) — either the
+   [prebuilt one](prebuilt/templatemanagerplugin-debug.cgp) or your own build from
+   `build/plugin/`.
 2. In Code On the Go, open **Settings → Plugin Manager**.
 3. Tap the **+** button, pick the `.cgp` file, and confirm.
 4. Restart the IDE when prompted.
