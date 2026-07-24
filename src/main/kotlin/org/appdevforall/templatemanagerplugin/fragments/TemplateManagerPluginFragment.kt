@@ -248,8 +248,11 @@ class TemplateManagerPluginFragment : Fragment() {
 
     /** Sub-screen: one card per template bundled inside a multi-template .cgt. */
     private fun showTemplateList(item: CgtFileItem) {
-        val recycler = RecyclerView(requireContext()).apply {
-            layoutManager = LinearLayoutManager(requireContext())
+        // Use the plugin-themed inflater context so item_template.xml resolves plugin
+        // resources (chip drawable, theme attrs) instead of the host activity's theme.
+        val pluginContext = layoutInflater.context
+        val recycler = RecyclerView(pluginContext).apply {
+            layoutManager = LinearLayoutManager(pluginContext)
             adapter = TemplateCardAdapter(item.templates) { template -> showTemplateDetails(template) }
             clipToPadding = false
             val vertical = (8 * resources.displayMetrics.density).toInt()
