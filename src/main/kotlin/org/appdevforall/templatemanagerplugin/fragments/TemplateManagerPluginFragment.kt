@@ -1,6 +1,7 @@
 package org.appdevforall.templatemanagerplugin.fragments
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,6 +29,7 @@ import java.util.zip.ZipInputStream
 class TemplateManagerPluginFragment : Fragment() {
 
     companion object {
+        private const val TAG = "TemplateManagerPlugin"
         private const val PLUGIN_ID = "org.appdevforall.templatemanagerplugin"
         private const val TEMPLATE_JSON_SUFFIX = "/template/template.json"
         private const val TEMPLATES_SUBDIR = "templates"
@@ -81,13 +83,27 @@ class TemplateManagerPluginFragment : Fragment() {
 
     /** Re-scans the IDE's templates directory and /sdcard/Download, rebuilding the card list. */
     private fun refreshTemplates() {
+        // The host registers a plugin's templates as "plugin_<pluginId>_<originalName>"
+        // (IdeTemplateServiceImpl.prefixedName), and unregisterTemplate() re-applies that
+        // prefix. So the original name is only recoverable for files carrying THIS plugin's
+        // prefix; the store also holds the IDE's bundled templates and other plugins'
+        // templates, which don't.
         val prefix = "plugin_${PLUGIN_ID}_"
 
         val installedItems = templatesDirectory()
             ?.listFiles { f -> f.isFile && f.name.endsWith(".cgt", ignoreCase = true) }
             ?.sortedBy { it.name }
             ?.mapNotNull { file ->
-                val unregisterName = file.name.removePrefix(prefix)
+                val unregisterName = if (file.name.startsWith(prefix)) {
+                    file.name.removePrefix(prefix)
+                } else {
+                    Log.w(
+                        TAG,
+                        "Installed template '${file.name}' does not carry this plugin's prefix; " +
+                            "it was not registered by this plugin, so uninstall won't apply to it."
+                    )
+                    file.name
+                }
                 runCatching { parseCgtFile(file, installed = true, unregisterName = unregisterName) }.getOrNull()
             }
             ?: emptyList()
