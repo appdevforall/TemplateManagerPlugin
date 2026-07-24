@@ -31,3 +31,14 @@ val CgtFileItem.hasMultipleTemplates: Boolean
 /** [CgtFileItem.name] without the redundant ".cgt" extension, for display only. */
 val CgtFileItem.displayName: String
     get() = if (name.endsWith(".cgt", ignoreCase = true)) name.dropLast(4) else name
+
+/**
+ * Formats a version for the card's version chip, matching the host Plugin Manager:
+ * a "v" prefix, and versions with more than three dot-segments truncated to the first
+ * three plus an ellipsis. Blank versions render as an empty string.
+ */
+fun versionLabel(version: String): String {
+    if (version.isBlank()) return ""
+    val segments = version.split('.')
+    return if (segments.size > 3) "v${segments.take(3).joinToString(".")}..." else "v$version"
+}

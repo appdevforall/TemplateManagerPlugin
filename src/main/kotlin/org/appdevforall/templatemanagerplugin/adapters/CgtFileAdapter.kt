@@ -13,6 +13,7 @@ import org.appdevforall.templatemanagerplugin.models.CgtFileItem
 import org.appdevforall.templatemanagerplugin.models.displayName
 import org.appdevforall.templatemanagerplugin.models.hasMultipleTemplates
 import org.appdevforall.templatemanagerplugin.models.primaryTemplate
+import org.appdevforall.templatemanagerplugin.models.versionLabel
 
 class CgtFileAdapter(
     private val items: List<CgtFileItem>,
@@ -37,7 +38,9 @@ class CgtFileAdapter(
         fun bind(item: CgtFileItem) {
             val primary = item.primaryTemplate
             binding.tvTemplateName.text = primary.name.ifBlank { item.displayName }
-            binding.tvTemplateVersion.text = primary.version
+            val versionText = versionLabel(primary.version)
+            binding.tvTemplateVersion.text = versionText
+            binding.tvTemplateVersion.visibility = if (versionText.isBlank()) View.GONE else View.VISIBLE
             binding.tvTemplateDesc.text = primary.description
             binding.tvFileName.text = item.displayName
 

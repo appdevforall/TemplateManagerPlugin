@@ -2,12 +2,14 @@ package org.appdevforall.templatemanagerplugin.adapters
 
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.recyclerview.widget.RecyclerView
 import org.appdevforall.templatemanagerplugin.R
 import org.appdevforall.templatemanagerplugin.databinding.ItemTemplateBinding
 import org.appdevforall.templatemanagerplugin.models.TemplateMetadata
+import org.appdevforall.templatemanagerplugin.models.versionLabel
 
 /** Lists the individual templates bundled inside a single multi-template .cgt file. */
 class TemplateCardAdapter(
@@ -24,7 +26,9 @@ class TemplateCardAdapter(
 
         fun bind(template: TemplateMetadata) {
             binding.tvTemplateName.text = template.name.ifBlank { "(unnamed)" }
-            binding.tvTemplateVersion.text = template.version
+            val versionText = versionLabel(template.version)
+            binding.tvTemplateVersion.text = versionText
+            binding.tvTemplateVersion.visibility = if (versionText.isBlank()) View.GONE else View.VISIBLE
             binding.tvTemplateDesc.text = template.description
 
             binding.btnMenu.setOnClickListener { anchor ->
