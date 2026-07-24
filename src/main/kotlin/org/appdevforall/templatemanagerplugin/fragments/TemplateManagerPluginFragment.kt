@@ -140,8 +140,10 @@ class TemplateManagerPluginFragment : Fragment() {
         }
         if (templates.isEmpty()) return null
         return CgtFileItem(
+            // Display the original filename: the host stores installed templates with a
+            // "plugin_<pluginId>_" prefix, which unregisterName already strips off.
             file = file,
-            name = file.name,
+            name = unregisterName,
             templates = templates,
             installed = installed,
             unregisterName = unregisterName
