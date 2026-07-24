@@ -113,7 +113,7 @@ class TemplateManagerPlugin : IPlugin, UIExtension, EditorTabExtension, Document
                 order = 0,
                 isEnabled = true,
                 isVisible = true,
-                tooltip = "A Code on the Go plugin"
+                tooltip = "Browse, install, and manage .cgt project templates"
             )
         )
     }
@@ -130,21 +130,31 @@ class TemplateManagerPlugin : IPlugin, UIExtension, EditorTabExtension, Document
         return listOf(
             PluginTooltipEntry(
                 tag = "org_appdevforall_templatemanagerplugin.overview",
-                summary = "<b>TemplateManagerPlugin</b><br>A Code on the Go plugin",
+                summary = "<b>Template Manager</b><br>Install, uninstall, and manage Code On the Go " +
+                    "project templates (.cgt files).",
                 detail = """
-                    <h3>TemplateManagerPlugin</h3>
-                    <p>A Code on the Go plugin</p>
+                    <h3>Template Manager</h3>
+                    <p>Manage the <code>.cgt</code> project/file templates available to Code On the Go's
+                    New Project / New File wizard, all from one screen.</p>
 
-                    <h4>Features:</h4>
+                    <h4>What you see</h4>
                     <ul>
-                        <li>Feature 1 - Describe your feature</li>
-                        <li>Feature 2 - Describe your feature</li>
+                        <li><b>Installed</b> (green) - templates registered with the IDE.</li>
+                        <li><b>Not installed</b> (red) - <code>.cgt</code> files found in your Downloads
+                        folder, ready to install.</li>
                     </ul>
+                    <p>A <code>.cgt</code> that bundles more than one template shows a "Contains N templates"
+                    note; tap it to see a card per bundled template.</p>
 
-                    <h4>How to use:</h4>
+                    <h4>Actions (per-card &#8942; menu)</h4>
                     <ol>
-                        <li>Step 1 - Describe how to use</li>
-                        <li>Step 2 - Describe how to use</li>
+                        <li><b>Install</b> - registers the template and moves the file from Downloads into
+                        the IDE's template store.</li>
+                        <li><b>Uninstall</b> - unregisters the template and moves it back to Downloads.</li>
+                        <li><b>Delete</b> - permanently removes the <code>.cgt</code> from Downloads
+                        (asks for confirmation first).</li>
+                        <li><b>Details</b> - shows the template's version, description, and optional
+                        wizard parameters.</li>
                     </ol>
                 """.trimIndent(),
                 buttons = emptyList()
