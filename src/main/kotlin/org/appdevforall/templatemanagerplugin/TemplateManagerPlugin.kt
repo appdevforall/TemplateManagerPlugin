@@ -124,6 +124,9 @@ class TemplateManagerPlugin : IPlugin, UIExtension, EditorTabExtension, Document
 
     override fun canCloseEditorTab(tabId: String): Boolean = true
 
+    // Required by DocumentationExtension, but the host ignores this value: it derives the
+    // tooltip category as "plugin_<pluginId>" for both registration and lookup (see
+    // IdeTooltipServiceImpl / PluginDocumentationManager). Only the entry `tag` is matched.
     override fun getTooltipCategory(): String = "org_appdevforall_templatemanagerplugin"
 
     override fun getTooltipEntries(): List<PluginTooltipEntry> {
