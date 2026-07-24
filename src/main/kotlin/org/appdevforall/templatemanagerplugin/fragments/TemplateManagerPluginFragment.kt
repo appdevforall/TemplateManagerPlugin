@@ -24,20 +24,18 @@ import org.appdevforall.templatemanagerplugin.models.CgtFileItem
 import org.appdevforall.templatemanagerplugin.models.TemplateMetadata
 import org.appdevforall.templatemanagerplugin.models.displayName
 import org.appdevforall.templatemanagerplugin.models.primaryTemplate
+import org.appdevforall.templatemanagerplugin.parsing.CgtTemplateReader
 import com.itsaky.androidide.plugins.base.PluginFragmentHelper
 import com.itsaky.androidide.plugins.services.IdeEnvironmentService
 import com.itsaky.androidide.plugins.services.IdeTemplateService
 import com.itsaky.androidide.plugins.services.IdeTooltipService
-import org.json.JSONObject
 import java.io.File
-import java.util.zip.ZipInputStream
 
 class TemplateManagerPluginFragment : Fragment() {
 
     companion object {
         private const val TAG = "TemplateManagerPlugin"
         private const val PLUGIN_ID = "org.appdevforall.templatemanagerplugin"
-        private const val TEMPLATE_JSON_SUFFIX = "/template/template.json"
         private const val TEMPLATES_SUBDIR = "templates"
         private const val TOOLTIP_TAG = "org_appdevforall_templatemanagerplugin.overview"
         // Hardcoded on purpose: the host app holds MANAGE_EXTERNAL_STORAGE, and /sdcard is a
@@ -155,30 +153,11 @@ class TemplateManagerPluginFragment : Fragment() {
     }
 
     /**
-     * Reads every "<path>/template/template.json" entry in a .cgt (zip) file — there can be
-     * more than one when the file bundles multiple templates behind a single install.
+     * Parses a .cgt (which may bundle multiple templates) into a card item, or null if it
+     * contains no template.json. Actual zip/JSON parsing lives in [CgtTemplateReader].
      */
     private fun parseCgtFile(file: File, installed: Boolean, unregisterName: String): CgtFileItem? {
-        val templates = mutableListOf<TemplateMetadata>()
-        file.inputStream().use { stream ->
-            ZipInputStream(stream).use { zip ->
-                while (true) {
-                    val entry = zip.nextEntry ?: break
-                    if (entry.name.endsWith(TEMPLATE_JSON_SUFFIX)) {
-                        val json = JSONObject(zip.readBytes().toString(Charsets.UTF_8))
-                        templates.add(
-                            TemplateMetadata(
-                                name = json.optString("name"),
-                                description = json.optString("description"),
-                                version = json.optString("version"),
-                                optionalTags = parseOptionalTags(json)
-                            )
-                        )
-                    }
-                    zip.closeEntry()
-                }
-            }
-        }
+        val templates = CgtTemplateReader.readTemplates(file.inputStream())
         if (templates.isEmpty()) return null
         return CgtFileItem(
             // Display the original filename: the host stores installed templates with a
@@ -189,23 +168,6 @@ class TemplateManagerPluginFragment : Fragment() {
             installed = installed,
             unregisterName = unregisterName
         )
-    }
-
-    /**
-     * Collects the tags declared under parameters.optional. Each is rendered as
-     * "<tag> (<identifier>)" when the entry carries an identifier, else just "<tag>".
-     */
-    private fun parseOptionalTags(json: JSONObject): List<String> {
-        val optional = json.optJSONObject("parameters")?.optJSONObject("optional")
-            ?: return emptyList()
-        val tags = mutableListOf<String>()
-        val keys = optional.keys()
-        while (keys.hasNext()) {
-            val key = keys.next()
-            val identifier = optional.optJSONObject(key)?.optString("identifier").orEmpty()
-            tags.add(if (identifier.isNotBlank()) "$key ($identifier)" else key)
-        }
-        return tags
     }
 
     private fun installTemplate(item: CgtFileItem) {

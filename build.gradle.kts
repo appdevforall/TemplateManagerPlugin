@@ -14,10 +14,11 @@ android {
 
     defaultConfig {
         applicationId = "org.appdevforall.templatemanagerplugin"
-        minSdk = 21 
-        targetSdk = 36 
+        minSdk = 21
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -66,6 +67,14 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlin.stdlib)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.json) // real org.json for JVM unit tests (android.jar's is stubbed)
+
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
 
 tasks.wrapper {
