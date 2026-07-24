@@ -48,7 +48,7 @@ class TemplateManagerPlugin : IPlugin, UIExtension, EditorTabExtension, Document
         return listOf(
             TabItem(
                 id = "org_appdevforall_templatemanagerplugin_tab",
-                title = "TemplateManagerPlugin",
+                title = "Template Manager",
                 fragmentFactory = { TemplateManagerPluginFragment() },
                 isEnabled = true,
                 isVisible = true,
@@ -65,7 +65,7 @@ class TemplateManagerPlugin : IPlugin, UIExtension, EditorTabExtension, Document
         return listOf(
             NavigationItem(
                 id = "org_appdevforall_templatemanagerplugin_sidebar",
-                title = "TemplateManagerPlugin",
+                title = "Template Manager",
                 icon = R.drawable.ic_plugin,
                 isEnabled = true,
                 isVisible = true,
@@ -105,7 +105,7 @@ class TemplateManagerPlugin : IPlugin, UIExtension, EditorTabExtension, Document
         return listOf(
             EditorTabItem(
                 id = "org_appdevforall_templatemanagerplugin_main",
-                title = "TemplateManagerPlugin",
+                title = "Template Manager",
                 icon = R.drawable.ic_plugin,
                 fragmentFactory = { TemplateManagerPluginFragment() },
                 isCloseable = true,
