@@ -57,18 +57,12 @@ android {
 dependencies {
     compileOnly(files("libs/plugin-api.jar"))
 
-       // AppCompat components
-    implementation(libs.androidx.appcompat)
-    implementation(libs.constraintlayout)
-    implementation(libs.material)
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.recyclerview)
-
-    implementation("androidx.fragment:fragment-ktx:1.8.8")
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.kotlin.stdlib)
 }
 
