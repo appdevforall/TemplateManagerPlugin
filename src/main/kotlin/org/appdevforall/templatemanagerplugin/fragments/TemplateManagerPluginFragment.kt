@@ -193,11 +193,22 @@ class TemplateManagerPluginFragment : Fragment() {
             return
         }
 
+        // Restore a copy to Downloads BEFORE unregistering. Unregister deletes the
+        // template-store copy, so if the restore fails we must not proceed — otherwise
+        // the user's only copy would be lost.
         val restoredFile = File(DOWNLOAD_DIR, item.unregisterName)
         val restored = runCatching { item.file.copyTo(restoredFile, overwrite = true) }.isSuccess
+        if (!restored) {
+            Toast.makeText(
+                context,
+                "Failed to restore ${item.displayName} to Downloads",
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
 
         val success = service.unregisterTemplate(item.unregisterName)
-        if (!success && restored) {
+        if (!success) {
             restoredFile.delete()
         }
 
