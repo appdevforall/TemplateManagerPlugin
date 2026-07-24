@@ -21,7 +21,8 @@ class CgtFileAdapter(
     private val onUninstall: (CgtFileItem) -> Unit,
     private val onDetails: (CgtFileItem) -> Unit,
     private val onDelete: (CgtFileItem) -> Unit,
-    private val onViewTemplates: (CgtFileItem) -> Unit
+    private val onViewTemplates: (CgtFileItem) -> Unit,
+    private val onLongPress: (View) -> Unit
 ) : RecyclerView.Adapter<CgtFileAdapter.FileViewHolder>() {
 
     private companion object {
@@ -43,6 +44,9 @@ class CgtFileAdapter(
             binding.tvTemplateVersion.visibility = if (versionText.isBlank()) View.GONE else View.VISIBLE
             binding.tvTemplateDesc.text = primary.description
             binding.tvFileName.text = item.displayName
+
+            // Long-press any card to show the plugin's help tooltip (COGO convention).
+            binding.root.setOnLongClickListener { anchor -> onLongPress(anchor); true }
 
             if (item.hasMultipleTemplates) {
                 binding.tvMultiTemplate.visibility = View.VISIBLE

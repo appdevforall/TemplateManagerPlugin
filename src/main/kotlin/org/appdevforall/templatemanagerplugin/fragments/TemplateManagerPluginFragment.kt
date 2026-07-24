@@ -27,6 +27,7 @@ import org.appdevforall.templatemanagerplugin.models.primaryTemplate
 import com.itsaky.androidide.plugins.base.PluginFragmentHelper
 import com.itsaky.androidide.plugins.services.IdeEnvironmentService
 import com.itsaky.androidide.plugins.services.IdeTemplateService
+import com.itsaky.androidide.plugins.services.IdeTooltipService
 import org.json.JSONObject
 import java.io.File
 import java.util.zip.ZipInputStream
@@ -38,6 +39,7 @@ class TemplateManagerPluginFragment : Fragment() {
         private const val PLUGIN_ID = "org.appdevforall.templatemanagerplugin"
         private const val TEMPLATE_JSON_SUFFIX = "/template/template.json"
         private const val TEMPLATES_SUBDIR = "templates"
+        private const val TOOLTIP_TAG = "org_appdevforall_templatemanagerplugin.overview"
         // Hardcoded on purpose: the host app holds MANAGE_EXTERNAL_STORAGE, and /sdcard is a
         // near-universal compatibility symlink to the primary shared storage on Android. This
         // deliberately avoids Environment/MediaStore rather than being an oversight.
@@ -48,6 +50,7 @@ class TemplateManagerPluginFragment : Fragment() {
     private var emptyView: TextView? = null
     private var templateService: IdeTemplateService? = null
     private var environmentService: IdeEnvironmentService? = null
+    private var tooltipService: IdeTooltipService? = null
     private var refreshJob: Job? = null
 
     private val items = mutableListOf<CgtFileItem>()
@@ -57,7 +60,8 @@ class TemplateManagerPluginFragment : Fragment() {
         onUninstall = ::uninstallTemplate,
         onDetails = ::showDetails,
         onDelete = ::confirmDeleteDownloadFile,
-        onViewTemplates = ::showTemplateList
+        onViewTemplates = ::showTemplateList,
+        onLongPress = ::showHelpTooltip
     )
 
     override fun onGetLayoutInflater(savedInstanceState: Bundle?): LayoutInflater {
@@ -258,6 +262,16 @@ class TemplateManagerPluginFragment : Fragment() {
         ).show()
     }
 
+    /** Shows the plugin's help tooltip (registered via DocumentationExtension) anchored to a card. */
+    private fun showHelpTooltip(anchor: View) {
+        val service = tooltipService
+        if (service == null) {
+            Toast.makeText(context, "Help is not available", Toast.LENGTH_SHORT).show()
+            return
+        }
+        service.showTooltip(anchor, TOOLTIP_TAG)
+    }
+
     private fun confirmDeleteDownloadFile(item: CgtFileItem) {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Delete ${item.displayName}?")
@@ -348,6 +362,7 @@ class TemplateManagerPluginFragment : Fragment() {
             val serviceRegistry = PluginFragmentHelper.getServiceRegistry(PLUGIN_ID)
             templateService = serviceRegistry?.get(IdeTemplateService::class.java)
             environmentService = serviceRegistry?.get(IdeEnvironmentService::class.java)
+            tooltipService = serviceRegistry?.get(IdeTooltipService::class.java)
         }
     }
 
