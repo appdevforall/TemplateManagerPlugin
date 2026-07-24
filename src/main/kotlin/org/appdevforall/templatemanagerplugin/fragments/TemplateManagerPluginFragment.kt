@@ -38,6 +38,9 @@ class TemplateManagerPluginFragment : Fragment() {
         private const val PLUGIN_ID = "org.appdevforall.templatemanagerplugin"
         private const val TEMPLATE_JSON_SUFFIX = "/template/template.json"
         private const val TEMPLATES_SUBDIR = "templates"
+        // Hardcoded on purpose: the host app holds MANAGE_EXTERNAL_STORAGE, and /sdcard is a
+        // near-universal compatibility symlink to the primary shared storage on Android. This
+        // deliberately avoids Environment/MediaStore rather than being an oversight.
         private val DOWNLOAD_DIR = File("/sdcard/Download")
     }
 
