@@ -9,9 +9,14 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.appdevforall.templatemanagerplugin.R
 import org.appdevforall.templatemanagerplugin.adapters.CgtFileAdapter
 import org.appdevforall.templatemanagerplugin.adapters.TemplateCardAdapter
@@ -40,6 +45,7 @@ class TemplateManagerPluginFragment : Fragment() {
     private var emptyView: TextView? = null
     private var templateService: IdeTemplateService? = null
     private var environmentService: IdeEnvironmentService? = null
+    private var refreshJob: Job? = null
 
     private val items = mutableListOf<CgtFileItem>()
     private val adapter = CgtFileAdapter(
@@ -81,8 +87,25 @@ class TemplateManagerPluginFragment : Fragment() {
         refreshTemplates()
     }
 
-    /** Re-scans the IDE's templates directory and /sdcard/Download, rebuilding the card list. */
+    /**
+     * Re-scans the templates directory and /sdcard/Download and rebuilds the card list.
+     * The directory listing + per-file zip parsing runs on a background dispatcher (a
+     * Downloads folder can hold many/large .cgt bundles); results are applied on the main
+     * thread. Any in-flight scan is cancelled first so rapid refreshes don't race.
+     */
     private fun refreshTemplates() {
+        refreshJob?.cancel()
+        refreshJob = viewLifecycleOwner.lifecycleScope.launch {
+            val scanned = withContext(Dispatchers.IO) { scanTemplates() }
+            items.clear()
+            items.addAll(scanned)
+            adapter.notifyDataSetChanged()
+            emptyView?.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        }
+    }
+
+    /** Blocking file/zip scan of both locations; call off the main thread. */
+    private fun scanTemplates(): List<CgtFileItem> {
         // The host registers a plugin's templates as "plugin_<pluginId>_<originalName>"
         // (IdeTemplateServiceImpl.prefixedName), and unregisterTemplate() re-applies that
         // prefix. So the original name is only recoverable for files carrying THIS plugin's
@@ -116,12 +139,7 @@ class TemplateManagerPluginFragment : Fragment() {
             }
             ?: emptyList()
 
-        items.clear()
-        items.addAll(installedItems)
-        items.addAll(downloadItems)
-        adapter.notifyDataSetChanged()
-
-        emptyView?.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        return installedItems + downloadItems
     }
 
     private fun templatesDirectory(): File? {
