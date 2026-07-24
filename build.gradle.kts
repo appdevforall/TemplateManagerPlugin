@@ -69,7 +69,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
 
     implementation("androidx.fragment:fragment-ktx:1.8.8")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.1.0")
+    implementation(libs.kotlin.stdlib)
 }
 
 tasks.wrapper {
